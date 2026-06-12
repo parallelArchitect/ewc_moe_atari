@@ -180,6 +180,19 @@ class TieredStore:
             del self.cpu_cache[oldest_id]
             del self.cache_access_times[oldest_id]
             logger.debug(f"Evicted {oldest_id} from CPU cache")
+            # GB10 UMA: drop page cache for evicted expert file.
+            # On unified LPDDR5X, evicted .pt files stay in page cache
+            # causing double-allocation. posix_fadvise(DONTNEED) releases them.
+            try:
+                import ctypes, os as _os
+                _libc = ctypes.CDLL('libc.so.6', use_errno=True)
+                _fp = self.experts_path / f"{oldest_id}.pt"
+                if _fp.exists():
+                    _fd = _os.open(str(_fp), _os.O_RDONLY)
+                    _libc.posix_fadvise(_fd, 0, 0, 4)  # POSIX_FADV_DONTNEED=4
+                    _os.close(_fd)
+            except Exception as _e:
+                logger.debug(f"posix_fadvise skipped: {_e}")
 
         self.cpu_cache[expert_id] = data
         self.cache_access_times[expert_id] = time.time()

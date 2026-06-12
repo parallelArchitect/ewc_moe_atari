@@ -418,6 +418,28 @@ class ExpertManager:
 
     def _load_expert(self, expert_id: str) -> Expert:
         """Load expert from storage."""
+        # GB10 UMA: check /proc/meminfo MemAvailable before loading.
+        # cudaMemGetInfo returns N/A on GB10 — /proc/meminfo is ground truth.
+        # Log a warning if memory is critically low before proceeding.
+        try:
+            with open("/proc/meminfo") as _mf:
+                for _line in _mf:
+                    if _line.startswith("MemAvailable:"):
+                        _avail_kb = int(_line.split()[1])
+                        _avail_gb = _avail_kb / (1024 * 1024)
+                        if _avail_gb < 2.0:
+                            logger.warning(
+                                f"GB10 UMA: MemAvailable={_avail_gb:.1f}GB before "
+                                f"loading {expert_id}. Risk of OOM."
+                            )
+                        else:
+                            logger.debug(
+                                f"GB10 UMA: MemAvailable={_avail_gb:.1f}GB "
+                                f"before loading {expert_id}"
+                            )
+                        break
+        except Exception:
+            pass
         # Save current expert first
         self._save_current_expert()
 

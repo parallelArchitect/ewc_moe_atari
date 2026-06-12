@@ -226,4 +226,7 @@ final_checkpoint.pt
 
 # Tensorboard
 runs/
-events.out.*
+events.out.*sandbox/
+sandbox/
+*.db
+*.log
