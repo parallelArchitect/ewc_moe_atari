@@ -100,7 +100,7 @@ class PSO_SpeedRouter:
 
     def initialize(self):
         scale = _hardware_scale()
-        psi_bias = min(scale["psi"] / 100.0, 2.0)  # relative PSI importance
+        psi_bias = min((scale["psi"] / 100.0) if scale["psi"] is not None else 1.0, 2.0)
         for _ in range(self.size):
             w = _normalize({
                 "w_psi":  random.uniform(0.3, 0.6) * psi_bias,
@@ -253,8 +253,8 @@ class FSO_ThermalRouter:
     def initialize(self):
         scale = _hardware_scale()
         # Bias thermal weights toward observed thermal ranges
-        tgpu_bias = scale["tgpu"] / 90.0
-        cx7_bias  = scale["cx7"]  / 59.0
+        tgpu_bias = (scale["tgpu"] / 65.0) if scale["tgpu"] is not None else 1.0
+        cx7_bias  = (scale["cx7"]  / 46.0) if scale["cx7"]  is not None else 1.0
         for _ in range(self.size):
             w = _normalize({
                 "w_psi":  random.uniform(0.05, 0.2),

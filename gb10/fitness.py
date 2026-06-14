@@ -36,8 +36,8 @@ _lock = threading.Lock()
 _signal_max = {
     "psi":  100.0,   # PSI some_avg10 — 0 to 100 by definition, no cap needed
     "mem":  1.0,     # memory pressure ratio — recomputed each snapshot
-    "tgpu": 90.0,    # initial observation from azampatti field data
-    "cx7":  59.0,    # initial observation from azampatti field data
+    "tgpu": None,    # no prior — set from first hardware reading
+    "cx7":  None,    # no prior — set from first hardware reading
 }
 
 _signal_history = {
@@ -52,7 +52,7 @@ _MAX_HISTORY = 1000
 def _update_observed_max(key: str, value: float):
     """Update rolling observed maximum. No clamp. Hardware defines the ceiling."""
     with _lock:
-        if value > _signal_max[key]:
+        if _signal_max[key] is None or value > _signal_max[key]:
             _signal_max[key] = value
         history = _signal_history.get(key)
         if history is not None:
@@ -70,8 +70,8 @@ def _normalize_raw(key: str, value: float) -> float:
     """
     with _lock:
         ref = _signal_max[key]
-    if ref <= 0:
-        return 0.0
+    if ref is None or ref <= 0:
+        return 1.0
     return value / ref
 
 
